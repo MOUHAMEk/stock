@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion des Stocks</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Roboto', sans-serif;
+        background-color: #f0f2f5;
+        color: #333;
+        line-height: 1.6;
+    }
+
+    header {
+        background-color: #2c3e50;
+        color: white;
+        text-align: center;
+        padding: 20px 0;
+    }
+
+    #generatePDFButton {
+        display: block;
+        width: 200px;
+        padding: 10px;
+        margin: 20px auto;
+        background-color: #e67e22;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        text-align: center;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    #generatePDFButton:hover {
+        background-color: #d35400;
+    }
+
+    .actualiser-btn {
+        display: block;
+        width: 150px;
+        padding: 10px;
+        margin: 20px auto;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        text-align: center;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .actualiser-btn:hover {
+        background-color: #2980b9;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+    }
+
+    main {
+        width: 90%;
+        max-width: 1200px;
+        margin: 20px auto;
+    }
+
+    section {
+        background-color: white;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+        font-size: 1.8rem;
+        color: #34495e;
+        margin-bottom: 15px;
+    }
+
+    form label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+
+    form input,
+    form select,
+    form button {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 1rem;
+    }
+
+    form button {
+        background-color: #2ecc71;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+
+    form button:hover {
+        background-color: #27ae60;
+    }
+
+    #stock-dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+
+    .stock-item {
+        background-color: #ffffff;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        text-align: center;
+        transition: background-color 0.3s ease;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .stock-item.red {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+    }
+
+    .stock-item h3 {
+        font-size: 1.5rem;
+        color: #34495e;
+        margin-bottom: 10px;
+    }
+
+    .stock-item p {
+        margin: 5px 0;
+        font-size: 1rem;
+        color: #666;
+    }
+
+    .stock-item .date {
+        font-size: 0.9rem;
+        color: #7f8c8d;
+    }
+
+    .delete-button {
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        color: #e74c3c;
+        cursor: pointer;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+
+    .commander-button {
+        background-color: #8e44ad;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        margin-top: 10px;
+        cursor: pointer;
+    }
+
+    .commander-button:hover {
+        background-color: #6c3483;
+    }
+
+    footer {
+        text-align: center;
+        padding: 20px;
+        background-color: #2c3e50;
+        color: white;
+        position: relative;
+        bottom: 0;
+        width: 100%;
+    }
+</style>
+</head>
+<body>
+<header>
+    <h1>Gestion des Stocks sur Chantier</h1>
+</header>
+
+<main>
+    <button id="generatePDFButton">Générer le Rapport PDF</button>
+    <button class="actualiser-btn" onclick="window.location.reload();">Actualiser</button>
+
+    <section id="ajout-stock">
+        <h2>Ajouter Type de Stock</h2>
+        <form id="stock-form">
+            <label for="materiau">Type de Matériau:</label>
+            <input type="text" id="materiau" name="materiau" required>
+
+            <label for="unite">Unité:</label>
+            <select id="unite" name="unite" required>
+                <option value="m3">m³</option>
+                <option value="tonne">tonne</option>
+                <option value="nombre">nombre</option>
+                <option value="litres">litres</option>
+                <option value="voyage">voyage</option>
+                <option value="barilles">barilles</option>
+                <option value="sac">sac</option>
+            </select>
+
+            <button type="submit">Enregistrer le Type de Stock</button>
+        </form>
+    </section>
+
+    <section id="ajout-stock-initial">
+        <h2>Ajouter Stock Initial</h2>
+        <form id="ajout-stock-initial-form">
+            <label for="materiau-initial">Type de Matériau:</label>
+            <select id="materiau-initial" name="materiau-initial" required></select>
+
+            <label for="quantite-initiale">Quantité:</label>
+            <input type="number" id="quantite-initiale" name="quantite-initiale" required>
+
+            <label for="date-initiale">Date:</label>
+            <input type="date" id="date-initiale" name="date-initiale" required>
+
+            <label for="fournisseur">Nom du Fournisseur:</label>
+            <input type="text" id="fournisseur" name="fournisseur" required>
+
+            <button type="submit">Enregistrer Stock Initial</button>
+        </form>
+    </section>
+
+    <section id="consommation">
+        <h2>Suivi de la Consommation Journalière</h2>
+        <form id="consommation-form">
+            <label for="materiau-consommation">Type de Matériau:</label>
+            <select id="materiau-consommation" name="materiau-consommation" required></select>
+
+            <label for="quantite-utilisee">Quantité Utilisée:</label>
+            <input type="number" id="quantite-utilisee" name="quantite-utilisee" required>
+
+            <label for="date-consommation">Date de Consommation:</label>
+            <input type="date" id="date-consommation" name="date-consommation" required>
+
+            <label for="tache-consommation">Consommé à quelle tâche du chantier:</label>
+            <input type="text" id="tache-consommation" name="tache-consommation" required>
+            <button type="submit">Enregistrer la Consommation</button>
+        </form>
+    </section>
+
+    <section id="arrivage">
+        <h2>Arrivée de Stock</h2>
+        <form id="arrivage-form">
+            <label for="materiau-arrivage">Type de Matériau:</label>
+            <select id="materiau-arrivage" name="materiau-arrivage" required></select>
+
+            <label for="quantite-arrivage">Quantité Arrivée:</label>
+            <input type="number" id="quantite-arrivage" name="quantite-arrivage" required>
+
+            <label for="date-arrivage">Date d'Arrivée:</label>
+            <input type="date" id="date-arrivage" name="date-arrivage" required>
+
+            <button type="submit">Enregistrer l'Arrivée</button>
+        </form>
+    </section>
+
+    <section id="stocks-restants">
+        <h2>Consultation des Stocks Restants</h2>
+        <div id="stock-dashboard"></div>
+    </section>
+</main>
+
+<footer>
+    <p>© 2024 Gestion des Stocks - Chantier</p>
+</footer>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-app.js";
+    import { getDatabase, ref, set, update, get, remove } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "logiciel-86966.firebaseapp.com",
+        databaseURL: "https://logiciel-86966-default-rtdb.firebaseio.com",
+        projectId: "logiciel-86966",
+        storageBucket: "logiciel-86966.appspot.com",
+        messagingSenderId: "202216572476",
+        appId: "1:202216572476:web:88a0b1c222cbf15e892539",
+        measurementId: "G-37XN9LHCVY"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    const stockForm = document.getElementById('stock-form');
+    const ajoutStockInitialForm = document.getElementById('ajout-stock-initial-form');
+    const consommationForm = document.getElementById('consommation-form');
+    const arrivageForm = document.getElementById('arrivage-form');
+    const stockDashboard = document.getElementById('stock-dashboard');
+    const materiauInitialSelect = document.getElementById('materiau-initial');
+    const materiauConsommationSelect = document.getElementById('materiau-consommation');
+    const materiauArrivageSelect = document.getElementById('materiau-arrivage');
+
+    const lineSpacing = 9; 
+    const fichePadding = 10; 
+
+    const refreshMateriauOptions = async () => {
+        const stockRef = ref(database, 'stocks/');
+        const stockSnapshot = await get(stockRef);
+        const stockData = stockSnapshot.val() || {};
+
+        materiauInitialSelect.innerHTML = '';
+        materiauConsommationSelect.innerHTML = '';
+        materiauArrivageSelect.innerHTML = '';
+
+        Object.keys(stockData).forEach((materiau) => {
+            const option = document.createElement('option');
+            option.value = materiau;
+            option.textContent = `${materiau} (${stockData[materiau].unite})`;
+            materiauInitialSelect.appendChild(option);
+
+            const option2 = document.createElement('option');
+            option2.value = materiau;
+            option2.textContent = `${materiau} (${stockData[materiau].unite})`;
+            materiauConsommationSelect.appendChild(option2);
+
+            const option3 = document.createElement('option');
+            option3.value = materiau;
+            option3.textContent = `${materiau} (${stockData[materiau].unite})`;
+            materiauArrivageSelect.appendChild(option3);
+        });
+    };
+
+    const addHistoriqueEntry = async (materiau, quantite, type, date, tache) => {
+        const stockRef = ref(database, `stocks/${materiau}`);
+        const stockSnapshot = await get(stockRef);
+        const stockData = stockSnapshot.val() || {};
+
+        const historiqueEntries = stockData.historique || [];
+        historiqueEntries.push({
+            quantite,
+            type,
+            date,
+            tache: tache || "N/A"
+        });
+
+        await update(stockRef, {
+            historique: historiqueEntries
+        });
+    };
+
+    const deleteMateriau = async (materiau) => {
+        const stockRef = ref(database, `stocks/${materiau}`);
+        await remove(stockRef);
+        updateStockDisplay();
+        refreshMateriauOptions();
+    };
+
+    const commanderMateriau = async (materiau, button) => {
+        const stockRef = ref(database, `stocks/${materiau}`);
+        await update(stockRef, {
+            aCommander: true
+        });
+        button.textContent = "Mis en commande";
+        button.disabled = true;
+        updateStockDisplay();
+    };
+
+    const updateStockDisplay = async () => {
+        const stockRef = ref(database, 'stocks/');
+        const stockSnapshot = await get(stockRef);
+        const stockData = stockSnapshot.val() || {};
+
+        stockDashboard.innerHTML = '';
+
+        Object.keys(stockData).forEach((materiau) => {
+            const stockItem = document.createElement('div');
+            stockItem.classList.add('stock-item');
+
+            const seuilAlerte = stockData[materiau].quantiteInitiale * 0.1; 
+            if (stockData[materiau].quantiteRestante <= seuilAlerte) {
+                stockItem.classList.add('red');
+            }
+
+            const aCommander = stockData[materiau].aCommander === true;
+            const commanderButtonText = aCommander ? "Mis en commande" : "A commander";
+            const commanderButtonDisabled = aCommander ? "disabled" : "";
+
+            stockItem.innerHTML = `
+                <button class="delete-button" title="Supprimer ce matériau">❌</button>
+                <h3>${materiau}</h3>
+                <p>Stock Initial: ${stockData[materiau].quantiteInitiale} ${stockData[materiau].unite}</p>
+                <p>Quantité Restante: ${stockData[materiau].quantiteRestante} ${stockData[materiau].unite}</p>
+                <p class="date">Dernière mise à jour: ${stockData[materiau].dateDerniereModification}</p>
+                <div class="details">
+                    <p>Fournisseur: ${stockData[materiau].fournisseur}</p>
+                </div>
+                <button class="commander-button" title="Marquer ce matériau à commander" ${commanderButtonDisabled}>${commanderButtonText}</button>
+            `;
+
+            const deleteButton = stockItem.querySelector('.delete-button');
+            deleteButton.addEventListener('click', () => deleteMateriau(materiau));
+
+            const commanderButton = stockItem.querySelector('.commander-button');
+            commanderButton.addEventListener('click', () => commanderMateriau(materiau, commanderButton));
+
+            stockDashboard.appendChild(stockItem);
+        });
+    };
+
+    stockForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const materiau = document.getElementById('materiau').value;
+        const unite = document.getElementById('unite').value;
+
+        const stockRef = ref(database, `stocks/${materiau}`);
+        await set(stockRef, {
+            unite,
+            quantiteInitiale: 0,
+            quantiteRestante: 0,
+            dateDerniereModification: new Date().toLocaleDateString('fr-CA'),
+            fournisseur: '',
+            historique: [],
+            aCommander: false
+        });
+
+        document.getElementById('materiau').value = '';
+        document.getElementById('unite').value = 'm3';
+        await refreshMateriauOptions();
+        updateStockDisplay();
+    });
+
+    ajoutStockInitialForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const materiau = document.getElementById('materiau-initial').value;
+        const quantiteInitiale = parseFloat(document.getElementById('quantite-initiale').value);
+        const dateInitiale = document.getElementById('date-initiale').value;
+        const fournisseur = document.getElementById('fournisseur').value;
+
+        const stockRef = ref(database, `stocks/${materiau}`);
+        await update(stockRef, {
+            quantiteInitiale,
+            quantiteRestante: quantiteInitiale,
+            dateDerniereModification: dateInitiale,
+            fournisseur
+        });
+
+        await addHistoriqueEntry(materiau, quantiteInitiale, 'Ajout Initial', dateInitiale);
+
+        document.getElementById('quantite-initiale').value = '';
+        document.getElementById('date-initiale').value = '';
+        document.getElementById('fournisseur').value = '';
+
+        updateStockDisplay();
+    });
+
+    consommationForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const materiau = document.getElementById('materiau-consommation').value;
+        const quantiteUtilisee = parseFloat(document.getElementById('quantite-utilisee').value);
+        const dateConsommation = document.getElementById('date-consommation').value;
+        const tacheConsommation = document.getElementById('tache-consommation').value;
+
+        const stockRef = ref(database, `stocks/${materiau}`);
+        const stockSnapshot = await get(stockRef);
+        const stockData = stockSnapshot.val();
+
+        const nouvelleQuantiteRestante = stockData.quantiteRestante - quantiteUtilisee;
+
+        await update(stockRef, {
+            quantiteRestante: nouvelleQuantiteRestante,
+            dateDerniereModification: dateConsommation
+        });
+
+        await addHistoriqueEntry(materiau, quantiteUtilisee, 'Consommation', dateConsommation, tacheConsommation);
+
+        document.getElementById('quantite-utilisee').value = '';
+        document.getElementById('date-consommation').value = '';
+        document.getElementById('tache-consommation').value = '';
+
+        updateStockDisplay();
+    });
+
+    arrivageForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const materiau = document.getElementById('materiau-arrivage').value;
+        const quantiteArrivee = parseFloat(document.getElementById('quantite-arrivage').value);
+        const dateArrivage = document.getElementById('date-arrivage').value;
+
+        const stockRef = ref(database, `stocks/${materiau}`);
+        const stockSnapshot = await get(stockRef);
+        const stockData = stockSnapshot.val();
+
+        const nouvelleQuantiteRestante = stockData.quantiteRestante + quantiteArrivee;
+
+        await update(stockRef, {
+            quantiteRestante: nouvelleQuantiteRestante,
+            dateDerniereModification: dateArrivage
+        });
+
+        await addHistoriqueEntry(materiau, quantiteArrivee, 'Arrivage', dateArrivage);
+
+        document.getElementById('quantite-arrivage').value = '';
+        document.getElementById('date-arrivage').value = '';
+
+        updateStockDisplay();
+    });
+
+    await refreshMateriauOptions();
+    updateStockDisplay();
+
+    // Nouvelle image JPEG plus légère
+    const imageUrl = "https://i.ibb.co/4JY3n4z/GSEG-ETP-pdf-1.jpg"; // Cette image doit être un JPEG déjà compressé
+
+    const generatePDFReport = async () => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p','mm','a4');
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        const stockRef = ref(database, 'stocks/');
+        const stockSnapshot = await get(stockRef);
+        const stockData = stockSnapshot.val() || {};
+
+        const today = new Date();
+        const formattedDate = today.toISOString().split('T')[0];
+
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = imageUrl;
+        await new Promise((resolve) => {
+            img.onload = function() {
+                // Ajouter l'image en JPEG avec compression MEDIUM
+                doc.addImage(img, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'MEDIUM');
+                resolve();
+            };
+        });
+
+        doc.setFont("times","normal");
+        doc.setFontSize(12);
+
+        const titleText = `Rapport Stocks Chantier (au jour de ${formattedDate})`;
+        const titleWidth = doc.getTextWidth(titleText);
+        const titleX = (pageWidth - titleWidth) / 2;
+        const titleY = 60;
+        doc.text(titleText, titleX, titleY);
+
+        let xPosition = 25;
+        let yPosition = titleY + 10;
+        const ficheSpacing = 10;
+        const ficheWidth = (pageWidth - 2*25 - ficheSpacing) / 2;
+
+        const lineSpacing = 9;
+        const fichePadding = 10;
+
+        const aCommanderList = [];
+        const materiauxList = Object.keys(stockData);
+
+        const splitAndDrawText = (text, centerX, startY, ficheW=ficheWidth, align='center') => {
+            const maxTextWidth = ficheW - 2*fichePadding;
+            const lines = doc.splitTextToSize(text, maxTextWidth);
+            lines.forEach((line) => {
+                doc.text(line, centerX, startY, {align: align});
+                startY += lineSpacing;
+            });
+            return startY;
+        };
+
+        let currentPage = 1;
+        const newPage = () => {
+            doc.addPage();
+            // Pas d'image sur les autres pages pour réduire la taille
+            const topMargin = 2.5;
+            yPosition = topMargin+10;
+            xPosition = 25;
+            doc.setFont("times","normal");
+            doc.setFontSize(12);
+        };
+
+        for (let i = 0; i < materiauxList.length; i += 2) {
+            const pair = materiauxList.slice(i, i+2);
+            const ficheHeights = [];
+            const baseHeight = 30; 
+            for (const materiau of pair) {
+                ficheHeights.push(baseHeight);
+            }
+
+            const lineHeight = Math.max(...ficheHeights);
+
+            if (yPosition + lineHeight > pageHeight - 25) {
+                newPage();
+            }
+
+            xPosition = 25;
+
+            for (const materiau of pair) {
+                const data = stockData[materiau];
+                const seuilAlerte = data.quantiteInitiale * 0.1;
+                const isRed = data.quantiteRestante <= seuilAlerte;
+
+                const aCommander = data.aCommander === true;
+                if (aCommander) aCommanderList.push(materiau);
+
+                doc.setDrawColor(180,180,180);
+                doc.setLineWidth(0.5);
+                if (isRed) {
+                    doc.setFillColor(255,200,200);
+                } else {
+                    doc.setFillColor(230,230,230);
+                }
+                doc.roundedRect(xPosition, yPosition, ficheWidth, lineHeight, 2, 2, 'FD');
+
+                const centerX = xPosition + ficheWidth/2;
+                let currentY = yPosition + fichePadding + 5;
+
+                doc.setFont("times","bold");
+                doc.setFontSize(12);
+                currentY = splitAndDrawText(`Matériau: ${materiau}`, centerX, currentY);
+
+                doc.setFont("times","normal");
+                doc.setFontSize(11);
+                currentY = splitAndDrawText(`Quantité Restante: ${data.quantiteRestante} ${data.unite}`, centerX, currentY);
+
+                xPosition += ficheWidth + ficheSpacing;
+            }
+
+            yPosition += lineHeight + 10;
+        }
+
+        if (yPosition > pageHeight - 40) {
+            newPage();
+        }
+
+        doc.setFont("times","bold");
+        doc.setFontSize(16);
+        doc.setTextColor(255,0,0);
+        doc.text("Matériaux à commander :", 25, yPosition + 10);
+        yPosition += (10 + lineSpacing);
+
+        doc.setFontSize(12);
+        doc.setFont("times","normal");
+        doc.setTextColor(0,0,0);
+
+        if (aCommanderList.length === 0) {
+            doc.text("Aucun matériau marqué à commander", 25, yPosition);
+        } else {
+            for (const mat of aCommanderList) {
+                yPosition += lineSpacing;
+                doc.text(`- ${mat}`, 25, yPosition);
+            }
+        }
+
+        doc.save(`rapport_stocks_${formattedDate}.pdf`);
+
+        const updates = {};
+        Object.keys(stockData).forEach(mat => {
+            updates[`stocks/${mat}/aCommander`] = false;
+        });
+        await update(ref(database), updates);
+
+        updateStockDisplay();
+    };
+
+    document.getElementById('generatePDFButton').addEventListener('click', generatePDFReport);
+</script>
+</body>
+</html>
